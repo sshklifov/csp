@@ -128,42 +128,70 @@ int CountDegree(const std::vector<int>* graph, int n, int i)
     return deg;
 }
 
+bool HasEdge(const std::vector<int>* graph, int n, int v1, int v2)
+{
+    if (v1 > v2) std::swap(v1, v2);
+    // v1 < v2
+    for (int i : graph[v1])
+    {
+        if (i == v2) return true;
+    }
+
+    return false;
+}
 
 void BruteForce(const std::vector<int>* graph, int n)
 {
     int root = 0;
-    /* int degRoot = CountDegree(graph, n, root); */
-    /* for (int i = 1; i < n; ++i) */
-    /* { */
-    /*     int deg = CountDegree(graph, n, i); */
-    /*     if (deg > degRoot) */
-    /*     { */
-    /*         root = i; */
-    /*         degRoot = deg; */
-    /*     } */
-    /* } */
+    int degRoot = CountDegree(graph, n, root);
+    for (int i = 1; i < n; ++i)
+    {
+        int deg = CountDegree(graph, n, i);
+        if (deg > degRoot)
+        {
+            root = i;
+            degRoot = deg;
+        }
+    }
+
+    int other = -1;
+    int degOther = -1;
+    for (int i = 0; i < n; ++i)
+    {
+        if (i==root) continue;
+        int deg = CountDegree(graph, n, i);
+        if (deg > degOther)
+        {
+            other = i;
+            degOther = deg;
+        }
+    }
 
     assert(n < 30);
     int values[30];
-    for (int i = 1; i < n; ++i)
+    for (int i = 2; i < n; ++i)
     {
-        values[i-1] = 2*i + 1;
+        values[i-2] = 2*i + 1;
     }
 
     int nsolutions = 0;
     do
     {
-        int actualValues[30];
-        memcpy(actualValues, values, root*sizeof(int));
-        actualValues[root] = 1;
-        memcpy(actualValues+root+1, values+root, (n-root-1)*sizeof(int));
+        std::vector<int> actualValues(n);
+        int* p = values;
+        for (int i = 0; i < n; ++i)
+        {
+            if (i == root) actualValues[i] = 1;
+            else if (i == other) actualValues[i] = 3;
+            else actualValues[i] = *p++;
+        }
 
-        if (CheckAssignment(graph, n, actualValues))
+        if (CheckAssignment(graph, n, actualValues.data()))
         {
             ++nsolutions;
         }
     }
-    while (std::next_permutation(values, values+n-1));
+    while (std::next_permutation(values, values+n-2));
 
     printf("%d\n", nsolutions);
 }
@@ -191,4 +219,5 @@ int main()
     /* seed = 1577389239; */
     /* PrintTree(graph, n); */
 }
+
 

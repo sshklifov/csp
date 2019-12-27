@@ -114,59 +114,54 @@ bool CheckAssignment(const std::vector<int>* graph, int n, const int* values)
     return true;
 }
 
-int CountDegree(const std::vector<int>* graph, int n, int i)
-{
-    int deg = 0;
-    for (int u = 0; u < n; ++u)
-    {
-        for (int v : graph[u])
-        {
-            if (u==i || v==i) ++deg;
-        }
-    }
-
-    return deg;
-}
-
-
 void BruteForce(const std::vector<int>* graph, int n)
 {
     int root = 0;
-    /* int degRoot = CountDegree(graph, n, root); */
-    /* for (int i = 1; i < n; ++i) */
-    /* { */
-    /*     int deg = CountDegree(graph, n, i); */
-    /*     if (deg > degRoot) */
-    /*     { */
-    /*         root = i; */
-    /*         degRoot = deg; */
-    /*     } */
-    /* } */
+    while (graph[root].size() > 0)
+    {
+        root = graph[root].front();
+    }
 
     assert(n < 30);
     int values[30];
-    for (int i = 1; i < n; ++i)
+    for (int i = 0; i < n; ++i)
     {
-        values[i-1] = 2*i + 1;
+        values[i] = 2*i + 1;
     }
 
     int nsolutions = 0;
     do
     {
-        int actualValues[30];
-        memcpy(actualValues, values, root*sizeof(int));
-        actualValues[root] = 1;
-        memcpy(actualValues+root+1, values+root, (n-root-1)*sizeof(int));
-
-        if (CheckAssignment(graph, n, actualValues))
+        if (CheckAssignment(graph, n, values))
         {
             ++nsolutions;
+            /* printf("Solution\n"); */
+            /* for (int u = 0; u < n; ++u) */
+            /* { */
+            /*     for (int v : graph[u]) */
+            /*     { */
+            /*         printf("%d %d\n", */
+            /*                 values[u], */
+            /*                 values[v]); */
+            /*     } */
+            /* } */
+            /* return; */
         }
     }
-    while (std::next_permutation(values, values+n-1));
+    while (std::next_permutation(values, values+n));
 
+    /* printf("No solution\n"); */
+    /* PrintTree(graph, n); */
+    /* printf("using seed: %d\n", seed); */
     printf("%d\n", nsolutions);
 }
+
+/* void CountDegree(std::vector<int>* graph, int n) */
+/* { */
+/*     for (int i = 0; i < n; ++i) */
+/*     { */
+/*     } */
+/* } */
 
 sig_atomic_t loop = 1;
 void FlushStuff(int)
@@ -191,4 +186,3 @@ int main()
     /* seed = 1577389239; */
     /* PrintTree(graph, n); */
 }
-
