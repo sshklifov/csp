@@ -49,7 +49,7 @@ int PathCompression(std::vector<int>& pred, int i)
     return pred[i] = PathCompression(pred, pred[i]);
 }
 
-int seed = 53;
+int seed = 32;
 std::default_random_engine eng(seed);
 
 std::vector<int>* RandomTree(int n)
@@ -134,7 +134,12 @@ void BruteForce(const std::vector<int>* graph, int n)
     {
         if (CheckAssignment(graph, n, values))
         {
-            ++nsolutions;
+            /* ++nsolutions; */
+            for (int i = 0; i < n; ++i)
+            {
+                printf("%d ", values[i]);
+            }
+            printf("\n");
             /* printf("Solution\n"); */
             /* for (int u = 0; u < n; ++u) */
             /* { */
@@ -153,7 +158,8 @@ void BruteForce(const std::vector<int>* graph, int n)
     /* printf("No solution\n"); */
     /* PrintTree(graph, n); */
     /* printf("using seed: %d\n", seed); */
-    printf("%d\n", nsolutions);
+
+    /* printf("%d\n", nsolutions); */
 }
 
 /* void CountDegree(std::vector<int>* graph, int n) */
@@ -174,7 +180,7 @@ int main()
 {
     signal(SIGINT, FlushStuff);
 
-    int n = 10;
+    int n = 11;
     /* std::vector<int>* graph = ReadTree(stdin, &n); */
     /* seed = time(NULL); */
     while (loop)
@@ -182,6 +188,7 @@ int main()
 
         std::vector<int>* graph = RandomTree(n);
         BruteForce(graph, n);
+        loop = false;
     }
     /* seed = 1577389239; */
     /* PrintTree(graph, n); */
