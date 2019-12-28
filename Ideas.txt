@@ -1,0 +1,2 @@
+1. Keep a list of frontier (might be faster)
+2. pred not needed (make start node root)

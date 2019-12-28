@@ -180,7 +180,7 @@ int main()
 {
     signal(SIGINT, FlushStuff);
 
-    int n = 11;
+    int n = 10;
     /* std::vector<int>* graph = ReadTree(stdin, &n); */
     /* seed = time(NULL); */
     while (loop)
