@@ -49,7 +49,7 @@ int PathCompression(std::vector<int>& pred, int i)
     return pred[i] = PathCompression(pred, pred[i]);
 }
 
-int seed = 32;
+int seed = 35;
 std::default_random_engine eng(seed);
 
 std::vector<int>* RandomTree(int n)
@@ -180,7 +180,7 @@ int main()
 {
     signal(SIGINT, FlushStuff);
 
-    int n = 10;
+    int n = 11;
     /* std::vector<int>* graph = ReadTree(stdin, &n); */
     /* seed = time(NULL); */
     while (loop)

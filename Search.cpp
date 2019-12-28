@@ -12,18 +12,18 @@
 #include <forward_list>
 #include <list>
 
-#define MAX_VERTICES 50
-#define SEED 35
+#include "Globals.h"
+extern bool CheckIsTree(); // TODO ndebug
+extern bool BacktrackInvariant(int diff);
+extern bool CheckSolution();
 
-/* int nextVertex[MAX_VERTICES]; */
 int n;
 std::vector<int> graph[MAX_VERTICES];
-/* std::vector<int> adj[MAX_VERTICES]; */
 
-int PathCompression(std::vector<int>& pred, int i)
+int PathCompression(std::vector<int>& p, int i)
 {
-    if (pred[i] == -1) return i;
-    return pred[i] = PathCompression(pred, pred[i]);
+    if (p[i] == -1) return i;
+    return p[i] = PathCompression(p, p[i]);
 }
 
 void RandomTree(int n)
@@ -49,7 +49,6 @@ void RandomTree(int n)
         int parent2 = PathCompression(pred, v2);
         if (parent1 != parent2)
         {
-            /* if (v2 < v1) std::swap(v1, v2); */
             graph[v1].push_back(v2);
             graph[v2].push_back(v1);
             --edges;
@@ -70,6 +69,8 @@ void RandomTree(int n)
 
         v1 = v2;
     }
+
+    assert(CheckIsTree());
 }
 
 void PrintTree()
@@ -78,6 +79,7 @@ void PrintTree()
     {
         for (int v : graph[u])
         {
+            if (u > v) continue;
             printf("%d %d\n", u, v);
         }
     }
@@ -88,40 +90,51 @@ int vertexValues[MAX_VERTICES];
 bool usedValues[2*MAX_VERTICES];
 int pred[MAX_VERTICES];
 
-void PrintTreeValues()
-{
-    for (int u = 0; u < n; ++u)
-    {
-        for (int v : graph[u])
-        {
-            printf("%d %d\n", vertexValues[u], vertexValues[v]);
-        }
-    }
-}
-
 void PrepareBacktrack(int root)
 {
     for (int& x : vertexValues) x = -1;
     for (bool& x : usedValues) x = 0;
     for (int& x : pred) x = -1;
 
-    /* frontier.clear(); */
     pred[root] = root;
-    for (int v : graph[root])
+    std::queue<int> q;
+    q.push(root);
+
+    while (!q.empty())
     {
-        /* frontier.push_front(v); */
-        pred[v] = root;
+        int u = q.front();
+        q.pop();
+
+        for (int v : graph[u])
+        {
+            if (pred[v] == -1)
+            {
+                pred[v] = u;
+                q.push(u);
+            }
+        }
     }
+
     vertexValues[root] = 2*n - 1;
     usedValues[vertexValues[root]] = 1;
 }
 
 void Backtrack(int diff)
 {
+    assert(BacktrackInvariant(diff));
+    // TODO put after backtracking
+
     if (diff == 0)
     {
+        assert(CheckSolution());
+        for (int i = 0; i < n; ++i)
+        {
+            printf("%d ", vertexValues[i]);
+        }
+        printf("\n");
         /* PrintTreeValues(); */
-        throw diff;
+        /* throw diff; */
+        return;
     }
 
     for (int u = 0; u < n; ++u) // ORDER?
@@ -150,6 +163,7 @@ void Backtrack(int diff)
                     if (v == pred[u]) continue;
                     pred[v] = -1;
                 }
+                assert(BacktrackInvariant(diff));
             }
         }
     }
@@ -157,17 +171,21 @@ void Backtrack(int diff)
 
 void MainLoop()
 {
-    RandomTree(50);
-    PrepareBacktrack(0);
-    printf("commencing backtrack\n");
-
-    /* clock_t now = clock(); */
-    try
+    RandomTree(11);
+    for (int root = 0; root < n; ++root)
     {
+        PrepareBacktrack(root);
         Backtrack(2*n - 2);
     }
-    catch(int)
-    {}
+    /* printf("commencing backtrack\n"); */
+
+    /* clock_t now = clock(); */
+    /* try */
+    /* { */
+    /*     Backtrack(2*n - 2); */
+    /* } */
+    /* catch(int) */
+    /* {} */
 
     /* clock_t delta = clock() - now; */
     /* printf("%f\n", (float)delta / CLOCKS_PER_SEC); */
