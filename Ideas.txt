@@ -1,3 +1,15 @@
-1. Keep a list of frontier (might be faster)
-2. pred not needed (make start node root)
-3. order selection of unassigned node (with an assigned node)
+1. precompute 2*n - 1
+2. is it problem that graph has symmetric edges?
+
+
+
+
+
+------------------------------- docs -------------------------------
+1. choose vertex with highest degree as start
+2. make the tree rooted at the start.
+3. order rest of vertices. the ordering must satisfy the condition that when a vertex
+is chosen for assignment, its parents have already been assigned. this is easier to implement,
+easier to compute and prunes a bigger portion of the search space.
+4. test with different kind of orders (bfs, dfs, ...)
+5. choose an ordering of values for variables that is most likely to lead to a solution.

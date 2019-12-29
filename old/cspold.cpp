@@ -49,7 +49,7 @@ int PathCompression(std::vector<int>& pred, int i)
     return pred[i] = PathCompression(pred, pred[i]);
 }
 
-int seed = 35;
+int seed = 51;
 std::default_random_engine eng(seed);
 
 std::vector<int>* RandomTree(int n)
@@ -68,11 +68,14 @@ std::vector<int>* RandomTree(int n)
     while (edges > 0)
     {
         int v2 = uni(eng);
+        /* printf("%d ", v2); */
 
         int parent1 = PathCompression(pred, v1);
         int parent2 = PathCompression(pred, v2);
         if (parent1 != parent2)
         {
+            int oldV2 = v2;
+            /* printf("%d %d | ", v1, v2); */
             if (v2 < v1) std::swap(v1, v2);
             graph[v1].push_back(v2);
             --edges;
@@ -89,10 +92,15 @@ std::vector<int>* RandomTree(int n)
                     ++rank[parent2];
                 }
             }
-        }
 
-        v1 = v2;
+            v1 = oldV2;
+        }
+        else v1 = v2;
+        /* else printf("0 "); */
+
+        /* v1 = v2; */
     }
+    fflush(stdout);
     return graph.release();
 }
 
@@ -169,7 +177,7 @@ void BruteForce(const std::vector<int>* graph, int n)
 /*     } */
 /* } */
 
-sig_atomic_t loop = 1;
+sig_atomic_t loop = 5;
 void FlushStuff(int)
 {
     fflush(stdout);
@@ -188,7 +196,7 @@ int main()
 
         std::vector<int>* graph = RandomTree(n);
         BruteForce(graph, n);
-        loop = false;
+        loop -= 1;
     }
     /* seed = 1577389239; */
     /* PrintTree(graph, n); */

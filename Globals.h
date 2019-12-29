@@ -3,15 +3,18 @@
 
 #include <vector>
 
-const int MAX_VERTICES = 100;
+const int MAX_VERTICES = 50;
 const int USED_CAPACITY = 2*MAX_VERTICES;
-const int SEED = 35;
+const int SEED = 51;
 
-extern int n;
 extern std::vector<int> graph[MAX_VERTICES];
+extern int n;
 
-extern int vertexValues[MAX_VERTICES];
-extern bool usedValues[USED_CAPACITY];
+extern int nextVertex[MAX_VERTICES];
 extern int pred[MAX_VERTICES];
+extern int values[MAX_VERTICES];
+
+extern int usedValue[USED_CAPACITY];
+extern int usedDiff[USED_CAPACITY];
 
 #endif
