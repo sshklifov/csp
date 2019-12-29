@@ -8,9 +8,32 @@
 #include <stack>
 #include <queue>
 #include <functional>
+#include <algorithm>
+#include <climits>
+#include <csignal>
 
 #include "Globals.h"
 #include "AssertUtility.h"
+
+void ReadTree()
+{
+    FILE* fp = fopen("input.txt", "r");
+    assert(fp);
+
+    fscanf(fp, "%d", &n);
+    assert(n < MAX_VERTICES);
+    for (int i = 0; i < n; ++i) graph[i].clear();
+    
+    int v1, v2;
+    while (fscanf(fp, "%d %d", &v1, &v2) == 2)
+    {
+        graph[v1].push_back(v2);
+        graph[v2].push_back(v1);
+    }
+
+    assert(!ferror(fp));
+    assert(CheckIsTree());
+}
 
 int PathCompression(std::vector<int>& p, int i)
 {
@@ -35,13 +58,11 @@ void RandomTree(int vertices)
     while (edges > 0)
     {
         int v2 = distr(eng);
-        /* printf("%d ", v2); */
 
         int parent1 = PathCompression(p, v1);
         int parent2 = PathCompression(p, v2);
         if (parent1 != parent2)
         {
-            /* printf("%d %d | ", v1, v2); */
             graph[v1].push_back(v2);
             graph[v2].push_back(v1);
             --edges;
@@ -59,12 +80,10 @@ void RandomTree(int vertices)
                 }
             }
         }
-        /* else printf("0 "); */
 
         v1 = v2;
     }
 
-    /* fflush(stdout); */
     assert(CheckIsTree());
 }
 
@@ -76,18 +95,6 @@ void PrintTree()
         {
             if (u > v) continue;
             printf("%d %d\n", u, v);
-        }
-    }
-}
-
-void PrintTreeValues()
-{
-    for (int u = 0; u < n; ++u)
-    {
-        for (int v : graph[u])
-        {
-            if (u > v || values[u] == -1 || values[v] == -1) continue;
-            printf("%d %d\n", values[u], values[v]);
         }
     }
 }
@@ -117,36 +124,38 @@ void BfsOrder(int root)
     }
 }
 
-void BfsPrioOrder(int root)
+void NodeDepth(std::vector<int>& depth, int u)
 {
-    for (int i = 0; i < n; ++i)
-        nextVertex[i] = -1;
+    if (depth[u] != -1) return;
+    NodeDepth(depth, pred[u]);
+    depth[u] = depth[pred[u]] + 1;
+}
 
-    std::vector<int> depth(n, 0);
-    std::function<bool(int,int)> comp =
-        [&depth](int a, int b)
-        {
-            return (depth[a] > depth[b]) ||
-                (depth[a]==depth[b] && graph[a].size()<graph[b].size());
-        };
-
-    std::priority_queue<int,std::vector<int>,decltype(comp)> frontier (comp);
-    frontier.push(root);
-    while (!frontier.empty())
+void NodeHeight(std::vector<int>& height, int u)
+{
+    height[u] = 0;
+    for (int v : graph[u])
     {
-        int u = frontier.top();
-        frontier.pop();
-
-        for (int v : graph[u])
+        if (pred[v] == u)
         {
-            if (nextVertex[v] == -1)
-            {
-                depth[v] = depth[u] + 1;
-                frontier.push(v);
-            }
+            NodeHeight(height, v);
+            height[u] = std::max(height[u], height[v] + 1);
         }
-        if (!frontier.empty()) nextVertex[u] = frontier.top();
-        else nextVertex[u] = -1;
+    }
+}
+
+void NodeCount(std::vector<int>& count, int u)
+{
+    if (count[u] != -1) return;
+
+    count[u] = 1;
+    for (int v : graph[u])
+    {
+        if (u == pred[v])
+        {
+            NodeCount(count, v);
+            count[u] += count[v];
+        }
     }
 }
 
@@ -205,9 +214,81 @@ void PrepareBacktrack2(int root)
         }
     }
 
-    /* BfsOrder(root); */
-    /* BfsPrioOrder(root); */
     DfsOrder(root);
+}
+
+std::vector<int> valueDistribution[MAX_VERTICES];
+void FlushDistribution()
+{
+    FILE* fp = fopen("distr.txt", "w");
+    assert(fp);
+
+    int maxValue = 2*n - 1;
+    for (int value = 1; value <= maxValue; value+=2)
+    {
+        fprintf(fp, "%d ", value);
+    }
+    fputs("\n", fp);
+    for (int u = 0; u < n; ++u)
+    {
+        fprintf(fp, "%d ", u);
+        for (int value = 1; value <= maxValue; value+=2)
+        {
+            fprintf(fp, "%d ", valueDistribution[u][value]);
+        }
+        fputs("\n", fp);
+    }
+    fclose(fp);
+}
+
+void FlushClassifier(int root)
+{
+    std::vector<int> depth(n, -1);
+    depth[root] = 0;
+    for (int u = 0; u < n; ++u)
+    {
+        NodeDepth(depth, u);
+    }
+
+    std::vector<int> height(n, -1);
+    NodeHeight(height, root);
+
+    std::vector<int> count(n, -1);
+    NodeCount(count, root);
+
+    for (int u = 0; u < n; ++u)
+    {
+        if (u == root) continue;
+        int highestVal = 2*n - 1;
+
+        int sum = 0;
+        for (int i = 1; i <= highestVal; i += 2)
+        {
+            sum += valueDistribution[u][i];
+        }
+
+        double loExpect = 0.f;
+        for (int i = 3; i <= highestVal; i += 2)
+        {
+            int steps = i/2;
+            loExpect += (double)valueDistribution[u][i]*steps / sum;
+        }
+
+        double hiExpect = 0.f;
+        for (int i = highestVal; i >= 3; i -= 2)
+        {
+            int steps = (highestVal-i)/2 + 1;
+            hiExpect += (double)valueDistribution[u][i]*steps / sum;
+        }
+
+        double rndExpect = (n-1) / 2.0;
+
+        int udepth = depth[u];
+        int uheight = height[u];
+        int ucount = count[u];
+        printf("%d,%d,%d,%d,%lf,%lf,%lf\n", n, ucount, udepth, uheight,
+                loExpect, hiExpect, rndExpect);
+    }
 }
 
 void Backtrack2(int u)
@@ -217,6 +298,10 @@ void Backtrack2(int u)
     if (u == -1)
     {
         assert(CheckSolution());
+        for (int i = 0; i < n; ++i)
+        {
+            ++valueDistribution[i][values[i]];
+        }
         /* for (int i = 0; i < n; ++i) printf("%d ", values[i]); */
         /* printf("\n"); */
         /* throw u; */
@@ -243,34 +328,59 @@ void Backtrack2(int u)
     }
 }
 
-void MainLoop()
+void MainLoop(int)
 {
-    RandomTree(12);
+    static std::default_random_engine eng(515);
+    std::uniform_int_distribution<int> distr(9, 15);
+    RandomTree(distr(eng));
+    /* RandomTree(13); */
 
-    /* int root = 0; */
-    /* for (int i = 1; i < n; ++i) */
-    /* { */
-    /*     if (graph[i].size() > graph[root].size()) root = i; */
-    /* } */
-    for (int root = 0; root < n; ++root)
-    {
-        PrepareBacktrack2(root);
-
-        try
+    std::vector<int> roots(n);
+    for (int i = 0; i < n; ++i) roots[i] = i;
+    std::sort(roots.begin(), roots.end(),
+        [](int a, int b)
         {
-            Backtrack2(nextVertex[root]);
-        }
-        catch (int)
-        {}
+            return graph[a].size() > graph[b].size();
+        });
+
+    int root = roots[0];
+    PrepareBacktrack2(root);
+    try
+    {
+        Backtrack2(nextVertex[root]);
     }
+    catch (int)
+    {}
+
+    /* PrintTree(); */
+    /* FlushDistribution(); // TODO */
+    FlushClassifier(root);
+    for (int i = 0; i < n; ++i)
+    {
+        valueDistribution[i].assign(USED_CAPACITY, 0);
+    }
+}
+
+sig_atomic_t loop = 1;
+void SignalHandler(int)
+{
+    loop = 0;
 }
 
 int main()
 {
-    int loop = 50;
-    while (loop --> 0)
+    signal(SIGINT, SignalHandler);
+    printf("n,subtree_cnt,depth,height,loexpect,hiexpect,rnd\n");
+
+    for (int i = 0; i < MAX_VERTICES; ++i)
     {
-        MainLoop();
+        valueDistribution[i].resize(USED_CAPACITY, 0);
     }
+
+    do
+    {
+        MainLoop(-1);
+    }
+    while (loop);
     return 0;
 }
