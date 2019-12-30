@@ -124,41 +124,6 @@ void BfsOrder(int root)
     }
 }
 
-void NodeDepth(std::vector<int>& depth, int u)
-{
-    if (depth[u] != -1) return;
-    NodeDepth(depth, pred[u]);
-    depth[u] = depth[pred[u]] + 1;
-}
-
-void NodeHeight(std::vector<int>& height, int u)
-{
-    height[u] = 0;
-    for (int v : graph[u])
-    {
-        if (pred[v] == u)
-        {
-            NodeHeight(height, v);
-            height[u] = std::max(height[u], height[v] + 1);
-        }
-    }
-}
-
-void NodeCount(std::vector<int>& count, int u)
-{
-    if (count[u] != -1) return;
-
-    count[u] = 1;
-    for (int v : graph[u])
-    {
-        if (u == pred[v])
-        {
-            NodeCount(count, v);
-            count[u] += count[v];
-        }
-    }
-}
-
 void DfsOrder(int root)
 {
     for (int i = 0; i < n; ++i)
@@ -181,6 +146,68 @@ void DfsOrder(int root)
         }
         if (!q.empty()) nextVertex[u] = q.top();
         else nextVertex[u] = -1;
+    }
+}
+
+void PrioOrder(int root)
+{
+    std::function<bool(int,int)> comp =
+        [](int a, int b)
+        {
+            return nodeCount[a] < nodeCount[b];
+        };
+    std::priority_queue<int,std::vector<int>,decltype(comp)> frontier(comp);
+    frontier.push(root);
+
+    while (!frontier.empty())
+    {
+        int u = frontier.top();
+        frontier.pop();
+
+        for (int v : graph[u])
+        {
+            if (pred[v] == u)
+            {
+                frontier.push(v);
+            }
+        }
+        if (!frontier.empty()) nextVertex[u] = frontier.top();
+        else nextVertex[u] = -1;
+    }
+}
+
+void NodeDepth(int* depth, int u)
+{
+    if (depth[u] != -1) return;
+    NodeDepth(depth, pred[u]);
+    depth[u] = depth[pred[u]] + 1;
+}
+
+void NodeHeight(std::vector<int>& height, int u) // TODO
+{
+    height[u] = 0;
+    for (int v : graph[u])
+    {
+        if (pred[v] == u)
+        {
+            NodeHeight(height, v);
+            height[u] = std::max(height[u], height[v] + 1);
+        }
+    }
+}
+
+void NodeCount(int* count, int u)
+{
+    if (count[u] != -1) return;
+
+    count[u] = 1;
+    for (int v : graph[u])
+    {
+        if (u == pred[v])
+        {
+            NodeCount(count, v);
+            count[u] += count[v];
+        }
     }
 }
 
@@ -214,7 +241,18 @@ void PrepareBacktrack2(int root)
         }
     }
 
-    DfsOrder(root);
+    for (int i = 0; i < n; ++i) nodeCount[i] = -1;
+    NodeCount(nodeCount, root);
+
+    for (int i = 0; i < n; ++i) depth[i] = -1;
+    depth[root] = 0;
+    for (int u = 0; u < n; ++u)
+    {
+        NodeDepth(depth, u);
+    }
+
+    /* DfsOrder(root); */
+    PrioOrder(root);
 }
 
 std::vector<int> valueDistribution[MAX_VERTICES];
@@ -247,14 +285,14 @@ void FlushClassifier(int root)
     depth[root] = 0;
     for (int u = 0; u < n; ++u)
     {
-        NodeDepth(depth, u);
+        NodeDepth(depth.data(), u);
     }
 
     std::vector<int> height(n, -1);
     NodeHeight(height, root);
 
     std::vector<int> count(n, -1);
-    NodeCount(count, root);
+    NodeCount(count.data(), root);
 
     for (int u = 0; u < n; ++u)
     {
@@ -297,43 +335,69 @@ void Backtrack2(int u)
 
     if (u == -1)
     {
-        assert(CheckSolution());
-        for (int i = 0; i < n; ++i)
-        {
-            ++valueDistribution[i][values[i]];
-        }
+        /* assert(CheckSolution()); */
+        extern bool CheckSolution();
+        CheckSolution();
+        /* for (int i = 0; i < n; ++i) */
+        /* { */
+        /*     ++valueDistribution[i][values[i]]; */
+        /* } */
         /* for (int i = 0; i < n; ++i) printf("%d ", values[i]); */
         /* printf("\n"); */
-        /* throw u; */
-        return;
+        throw u;
+        /* return; */
     }
 
-    for (int value = 1; value <= 2*n - 1; value += 2)
+    if (depth[u] % 2 == 0)
     {
-        if (usedValue[value]) continue;
-        int diff = abs(values[pred[u]] - value);
-        if (usedDiff[diff]) continue;
+        for (int value = 3; value <= 2*n - 1; value += 2)
+        {
+            if (usedValue[value]) continue;
+            int diff = abs(values[pred[u]] - value);
+            if (usedDiff[diff]) continue;
 
-        values[u] = value;
-        usedValue[value] = true;
-        usedDiff[diff] = true;
+            values[u] = value;
+            usedValue[value] = true;
+            usedDiff[diff] = true;
 
-        Backtrack2(nextVertex[u]);
+            Backtrack2(nextVertex[u]);
 
-        values[u] = -1;
-        usedValue[value] = false;
-        usedDiff[diff] = false;
+            values[u] = -1;
+            usedValue[value] = false;
+            usedDiff[diff] = false;
 
-        assert(BacktrackInvariant(u));
+            assert(BacktrackInvariant(u));
+        }
+    }
+    else
+    {
+        for (int value = 2*n - 1; value >= 3; value -= 2)
+        {
+            if (usedValue[value]) continue;
+            int diff = abs(values[pred[u]] - value);
+            if (usedDiff[diff]) continue;
+
+            values[u] = value;
+            usedValue[value] = true;
+            usedDiff[diff] = true;
+
+            Backtrack2(nextVertex[u]);
+
+            values[u] = -1;
+            usedValue[value] = false;
+            usedDiff[diff] = false;
+
+            assert(BacktrackInvariant(u));
+        }
     }
 }
 
 void MainLoop(int)
 {
-    static std::default_random_engine eng(515);
-    std::uniform_int_distribution<int> distr(9, 15);
-    RandomTree(distr(eng));
-    /* RandomTree(13); */
+    /* static std::default_random_engine eng(515); */
+    /* std::uniform_int_distribution<int> distr(9, 15); */
+    /* RandomTree(distr(eng)); */
+    RandomTree(51);
 
     std::vector<int> roots(n);
     for (int i = 0; i < n; ++i) roots[i] = i;
@@ -354,14 +418,15 @@ void MainLoop(int)
 
     /* PrintTree(); */
     /* FlushDistribution(); // TODO */
-    FlushClassifier(root);
-    for (int i = 0; i < n; ++i)
-    {
-        valueDistribution[i].assign(USED_CAPACITY, 0);
-    }
+
+    /* FlushClassifier(root); */
+    /* for (int i = 0; i < n; ++i) */
+    /* { */
+    /*     valueDistribution[i].assign(USED_CAPACITY, 0); */
+    /* } */
 }
 
-sig_atomic_t loop = 1;
+sig_atomic_t loop = 0;
 void SignalHandler(int)
 {
     loop = 0;
@@ -370,7 +435,7 @@ void SignalHandler(int)
 int main()
 {
     signal(SIGINT, SignalHandler);
-    printf("n,subtree_cnt,depth,height,loexpect,hiexpect,rnd\n");
+    /* printf("n,subtree_cnt,depth,height,loexpect,hiexpect,rnd\n"); */
 
     for (int i = 0; i < MAX_VERTICES; ++i)
     {

@@ -3,7 +3,7 @@
 
 #include <vector>
 
-const int MAX_VERTICES = 50;
+const int MAX_VERTICES = 100;
 const int USED_CAPACITY = 2*MAX_VERTICES;
 const int SEED = 51;
 
@@ -12,6 +12,8 @@ extern int n;
 
 extern int nextVertex[MAX_VERTICES];
 extern int pred[MAX_VERTICES];
+extern int nodeCount[MAX_VERTICES];
+extern int depth[MAX_VERTICES];
 extern int values[MAX_VERTICES];
 
 extern int usedValue[USED_CAPACITY];

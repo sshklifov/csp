@@ -126,15 +126,15 @@ void Backtrack(int diff)
 
     if (diff == 0)
     {
-        assert(CheckSolution());
-        for (int i = 0; i < n; ++i)
-        {
-            printf("%d ", vertexValues[i]);
-        }
-        printf("\n");
+        /* assert(CheckSolution()); */
+        /* for (int i = 0; i < n; ++i) */
+        /* { */
+        /*     printf("%d ", vertexValues[i]); */
+        /* } */
+        /* printf("\n"); */
         /* PrintTreeValues(); */
-        /* throw diff; */
-        return;
+        throw diff;
+        /* return; */
     }
 
     for (int u = 0; u < n; ++u) // ORDER?
@@ -171,11 +171,16 @@ void Backtrack(int diff)
 
 void MainLoop()
 {
-    RandomTree(11);
+    RandomTree(52);
     for (int root = 0; root < n; ++root)
     {
         PrepareBacktrack(root);
-        Backtrack(2*n - 2);
+        try
+        {
+            Backtrack(2*n - 2);
+        }
+        catch(int)
+        {}
     }
     /* printf("commencing backtrack\n"); */
 
