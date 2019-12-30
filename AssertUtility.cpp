@@ -1,10 +1,14 @@
-#include "Globals.h"
+#include "Solver.h"
 
-#include <cstdlib>
+#include <vector>
 #include <cassert>
+#include <cstdlib>
+#include <functional>
 
-bool CheckSolution()
+bool Solver::CheckSolution()
 {
+    assert(status == READY);
+
     std::vector<bool> used (USED_CAPACITY, 0);
     for (int i = 0; i < n; ++i)
     {
@@ -28,29 +32,31 @@ bool CheckSolution()
     return true;
 }
 
-static void DfsVisit(int u, int parent, std::vector<bool>& visited)
+bool Solver::CheckIsTree()
 {
-    visited[u] = true;
-
-    bool mirrorEdge = false;
-    for (int v : graph[u])
-    {
-        if (v == parent)
-        {
-            mirrorEdge = true;
-            continue;
-        }
-
-        assert(!visited[v]);
-        DfsVisit(v, u, visited);
-    }
-    if (parent >= 0 && parent < n) assert(mirrorEdge);
-}
-
-bool CheckIsTree()
-{
+    assert(status == LOADED);
     std::vector<bool> visited (n, false);
-    DfsVisit(0, -1, visited);
+    std::function<void(int,int)> DfsVisit =
+        [&](int u, int parent)
+        {
+            visited[u] = true;
+
+            int mirrorEdge = 0;
+            for (int v : graph[u])
+            {
+                if (v == parent)
+                {
+                    ++mirrorEdge;
+                    continue;
+                }
+
+                assert(!visited[v]);
+                DfsVisit(v, u);
+            }
+            if (parent != -1) assert(mirrorEdge == 1);
+        };
+
+    DfsVisit(0, -1);
     for (int i = 0; i < n; ++i)
     {
         assert(visited[i]);
@@ -59,47 +65,15 @@ bool CheckIsTree()
     return true;
 }
 
-static int CountVerticesBefore(int u)
+bool Solver::BacktrackInvariant(int u)
 {
-    std::vector<int> prevVertex(n, -1);
-    int lastVertex = -1;
-    for (int u = 0; u < n; ++u)
+    assert(status == READY);
+
+    int vertices = 0;
+    for (int i = root; i != u; i = nextVertex[i])
     {
-        int afterU = nextVertex[u];
-        if (afterU == -1)
-        {
-            assert(lastVertex == -1);
-            lastVertex = u;
-            continue;
-        }
-        assert(afterU >= 0 && afterU < n);
-        prevVertex[afterU] = u;
+        ++vertices;
     }
-
-    std::vector<bool> seen(n, 0);
-    seen[lastVertex] = 1;
-    int firstVertex = lastVertex;
-    while (prevVertex[firstVertex] != -1)
-    {
-        assert(!seen[prevVertex[firstVertex]]);
-        seen[prevVertex[firstVertex]] = 1;
-        firstVertex = prevVertex[firstVertex];
-    }
-    for (int i = 0; i < n; ++i) assert(seen[i]);
-
-    int cnt = 0;
-    while (firstVertex != u)
-    {
-        firstVertex = nextVertex[firstVertex];
-        ++cnt;
-    }
-
-    return cnt;
-}
-
-bool BacktrackInvariant(int u) // TODO mildy put
-{
-    int vertices = CountVerticesBefore(u);
 
     int numValues = 0;
     for (int i = 0; i < n; ++i)
@@ -111,7 +85,7 @@ bool BacktrackInvariant(int u) // TODO mildy put
     int numUsedValues = 0;
     for (int i = 0; i < USED_CAPACITY; ++i)
     {
-        if (usedValue[i]) ++numUsedValues;
+        if (usedValues[i]) ++numUsedValues;
     }
     assert(numUsedValues == vertices);
 
@@ -126,7 +100,7 @@ bool BacktrackInvariant(int u) // TODO mildy put
     {
         if (values[i] >= 0)
         {
-            assert(usedValue[values[i]]);
+            assert(usedValues[values[i]]);
         }
     }
 

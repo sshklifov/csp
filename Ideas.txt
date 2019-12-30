@@ -1,9 +1,5 @@
 1. precompute 2*n - 1
-2. is it problem that graph has symmetric edges?
-3. balance start -- with linear regerssion
-
-
-
+2. use variable free list in backtrack
 
 ------------------------------- docs -------------------------------
 1. choose vertex with highest degree as start (and balance)
@@ -13,13 +9,3 @@ is chosen for assignment, its parents have already been assigned. this is easier
 easier to compute and prunes a bigger portion of the search space.
 4. test with different kind of orders (bfs, dfs, ...)
 5. choose an ordering of values for variables that is most likely to lead to a solution.
-
-
------------------------------- results ------------------------------
-chosing the first node: most degree (bonus: + balance)
-choosing values:
-at begining - alternating
-at end - middle
-mix inbetween! (heavier for alternating)
-
-order: how many nodes does the tree have?
