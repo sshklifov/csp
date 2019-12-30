@@ -28,8 +28,9 @@ private:
 
 private:
     void Order();
-    void PredictPrio(int* prio);
+    void PredictPrio();
     void Backtrack(int u);
+    void BacktrackLoop(int u, int val);
 
 private:
     bool CheckIsTree();
@@ -49,6 +50,7 @@ public:
     int depth[MAX_VERTICES];
     int height[MAX_VERTICES];
     int nodeCount[MAX_VERTICES];
+    float stability[MAX_VERTICES];
     // value order?
 
     // if ordered

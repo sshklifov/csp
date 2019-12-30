@@ -5,7 +5,7 @@
 
 void MainLoop()
 {
-    int n = 13;
+    int n = 68;
     Solver solver(n);
 
     std::vector<int> roots(n);
@@ -22,7 +22,7 @@ void MainLoop()
     solver.Search();
 }
 
-sig_atomic_t loop = 1;
+sig_atomic_t loop = 0;
 void SignalHandler(int)
 {
     loop = 0;

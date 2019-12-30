@@ -76,7 +76,7 @@ void Solver::RootTree(int root)
     status = READY;
 }
 
-void Solver::PredictPrio(int* prio)
+void Solver::PredictPrio()
 {
     assert(status == ROOTED);
 
@@ -93,21 +93,44 @@ void Solver::PredictPrio(int* prio)
     for (int i = 0; i < n; ++i) nodeCount[i] = -1;
     NodeCount(root);
 
-    status = PREDICT;
+    assert(n > 9); // TODO
 
-    // TODO ML
-    for (int i = 0; i < n; ++i) prio[i] = nodeCount[i];
+    FILE* fp = fopen("input.csv", "w");
+    assert(fp);
+    fputs("n,subtree_cnt,depth,height\n", fp);
+    for (int u = 0; u < n; ++u)
+    {
+        if (u == root) continue;
+        fprintf(fp, "%d,%d,%d,%d\n", n, nodeCount[u], depth[u], height[u]);
+    }
+    assert(!ferror(fp));
+    fclose(fp);
+
+    int s = system("python getstability.py");
+    assert(s == 0);
+
+    fp = fopen("output.csv", "r");
+    assert(fp);
+    for (int i = 0; i < n; ++i)
+    {
+        if (i == root) stability[i] = 1.f;
+        else fscanf(fp, "%f", &stability[i]);
+    }
+    assert(!ferror(fp));
+    fclose(fp);
+
+    status = PREDICT;
 }
 
 void Solver::Order()
 {
-    int prio[MAX_VERTICES];
-    PredictPrio(prio);
+    PredictPrio();
+    assert(status == PREDICT);
 
     std::function<bool(int,int)> comp =
-        [prio](int a, int b)
+        [this](int a, int b)
         {
-            return prio[a] < prio[b];
+            return stability[a] < stability[b];
         };
     std::priority_queue<int,std::vector<int>,decltype(comp)> frontier(comp);
     frontier.push(root);
@@ -162,22 +185,59 @@ void Solver::Backtrack(int u)
         throw u;
     }
 
-    for (int value = 3; value <= 2*n - 1; value += 2)
+    if (stability[u] < 0.17f)
     {
-        if (usedValues[value]) continue;
-        int diff = abs(values[pred[u]] - value);
-        if (usedDiff[diff]) continue;
-
-        values[u] = value;
-        usedValues[value] = true;
-        usedDiff[diff] = true;
-
-        Backtrack(nextVertex[u]);
-
-        values[u] = -1;
-        usedValues[value] = false;
-        usedDiff[diff] = false;
-
-        assert(BacktrackInvariant(u));
+        int lo = n + !(n%2);
+        int hi = lo + 2;
+        while (lo >= 3 && hi <= 2*n - 1)
+        {
+            BacktrackLoop(u, lo);
+            lo -= 2;
+            BacktrackLoop(u, hi);
+            hi += 2;
+        }
+        while (lo >= 3)
+        {
+            BacktrackLoop(u, lo);
+            lo -= 2;
+        }
+        while (hi <= 2*n - 1)
+        {
+            BacktrackLoop(u, hi);
+            hi += 2;
+        }
     }
+    else if (depth[u] % 2)
+    {
+        for (int value = 2*n - 1; value >= 3; value -= 2)
+        {
+            BacktrackLoop(u, value);
+        }
+    }
+    else
+    {
+        for (int value = 3; value <= 2*n - 1; value += 2)
+        {
+            BacktrackLoop(u, value);
+        }
+    }
+}
+
+void Solver::BacktrackLoop(int u, int value)
+{
+    if (usedValues[value]) return;
+    int diff = abs(values[pred[u]] - value);
+    if (usedDiff[diff]) return;
+
+    values[u] = value;
+    usedValues[value] = true;
+    usedDiff[diff] = true;
+
+    Backtrack(nextVertex[u]);
+
+    values[u] = -1;
+    usedValues[value] = false;
+    usedDiff[diff] = false;
+
+    assert(BacktrackInvariant(u));
 }
