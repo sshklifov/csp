@@ -5,6 +5,7 @@
 
 const int MAX_VERTICES = 100;
 const int USED_CAPACITY = 2*MAX_VERTICES;
+const int SEED = 64;
 
 class Solver
 {
@@ -18,19 +19,21 @@ public:
     void Print();
 
     void Reload(const char* path);
-    void RootTree(int root);
-    void Search();
+    bool Search();
 
 private:
+    void RootTree(int root);
     void NodeDepth(int u);
     void NodeHeight(int u);
     void NodeCount(int u);
 
 private:
     void Order();
+    void DfsOrder(); // TODO
+
     void PredictPrio();
-    void Backtrack(int u);
-    void BacktrackLoop(int u, int val);
+    void BacktrackLoop(int u);
+    void Backtrack(int u, int val);
 
 private:
     bool CheckIsTree();
@@ -51,7 +54,6 @@ public:
     int height[MAX_VERTICES];
     int nodeCount[MAX_VERTICES];
     float stability[MAX_VERTICES];
-    // value order?
 
     // if ordered
     int nextVertex[MAX_VERTICES];
@@ -60,6 +62,7 @@ public:
     int values[MAX_VERTICES];
     bool usedValues[USED_CAPACITY];
     bool usedDiff[USED_CAPACITY];
+    /* int nextMin, nextMax; */
 
     enum {LOADED, ROOTED, PREDICT, ORDERED, READY} status;
 };

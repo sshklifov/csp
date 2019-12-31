@@ -1,42 +1,40 @@
 #include <algorithm>
 #include <csignal>
+#include <ctime>
+#include <cstdio>
+#include <unistd.h>
 
 #include "Solver.h"
 
+/* sig_atomic_t loop = 1; */
+/* void SignalHandler(int) */
+/* { */
+/*     loop = 0; */
+/* } */
+
 void MainLoop()
 {
-    int n = 68;
+    int n = 71;
     Solver solver(n);
-
-    std::vector<int> roots(n);
-    for (int i = 0; i < n; ++i) roots[i] = i;
-    std::sort(roots.begin(), roots.end(),
-        [&solver](int a, int b)
-        {
-            // TODO
-            return solver.graph[a].size() > solver.graph[b].size();
-        });
-
-    int root = roots[0];
-    solver.RootTree(root);
-    solver.Search();
-}
-
-sig_atomic_t loop = 0;
-void SignalHandler(int)
-{
-    loop = 0;
+    if(solver.Search())
+    {
+        printf("Found\n");
+    }
+    else
+    {
+        printf("Not found\n");
+    }
 }
 
 int main()
 {
-    signal(SIGINT, SignalHandler);
+    /* signal(SIGALRM, SignalHandler); */
 
     do
     {
         MainLoop();
     }
-    while (loop);
+    while (1);
     return 0;
 }
 

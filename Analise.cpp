@@ -46,11 +46,11 @@ static int PathCompression(std::vector<int>& p, int i)
 
 void Solver::Random(int n)
 {
-    assert(n <= MAX_VERTICES);
+    assert(n <= MAX_VERTICES && n > 9);
     this->n = n;
     for (int i = 0; i < n; ++i) graph[i].clear();
 
-    static std::default_random_engine eng (55);
+    static std::default_random_engine eng (SEED);
     std::uniform_int_distribution<int> distr(0, n-1);
 
     std::vector<int> p(n, -1);
