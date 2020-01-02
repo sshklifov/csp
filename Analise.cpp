@@ -3,6 +3,7 @@
 #include <cassert>
 #include <random>
 
+// helper function to calculate depth for each node
 void Solver::NodeDepth(int u)
 {
     if (depth[u] != -1) return;
@@ -10,6 +11,7 @@ void Solver::NodeDepth(int u)
     depth[u] = depth[pred[u]] + 1;
 }
 
+// helper function to calculate height for each node
 void Solver::NodeHeight(int u)
 {
     height[u] = 0;
@@ -23,6 +25,7 @@ void Solver::NodeHeight(int u)
     }
 }
 
+// helper function to calculate number of nodes rooted at u for each node
 void Solver::NodeCount(int u)
 {
     if (nodeCount[u] != -1) return;
@@ -38,12 +41,19 @@ void Solver::NodeCount(int u)
     }
 }
 
+// for disjoin set data structure (similar to kruskal)
 static int PathCompression(std::vector<int>& p, int i)
 {
     if (p[i] == -1) return i;
     return p[i] = PathCompression(p, p[i]);
 }
 
+// generate uniform random tree (with a random walk)
+// Започваме с random root. Всеки път избираме нов random node.
+// Искаме да сложим edge между него и последния node. Ако образуваме
+// цикъл, не правим нищо и random node-a става последен random node.
+// Ако не образува цикъл, добавяме edge-a и random node-a става последения
+// random node.
 void Solver::Random(int n)
 {
     assert(n <= MAX_VERTICES && n > 9);
@@ -93,6 +103,8 @@ void Solver::Random(int n)
 
 void Solver::Print()
 {
+    printf("%d\n", n);
+
     for (int u = 0; u < n; ++u)
     {
         for (int v : graph[u])
@@ -102,79 +114,3 @@ void Solver::Print()
         }
     }
 }
-
-#if 0
-std::vector<int> valueDistribution[MAX_VERTICES];
-void FlushDistribution()
-{
-    FILE* fp = fopen("distr.txt", "w");
-    assert(fp);
-
-    int maxValue = 2*n - 1;
-    for (int value = 1; value <= maxValue; value+=2)
-    {
-        fprintf(fp, "%d ", value);
-    }
-    fputs("\n", fp);
-    for (int u = 0; u < n; ++u)
-    {
-        fprintf(fp, "%d ", u);
-        for (int value = 1; value <= maxValue; value+=2)
-        {
-            fprintf(fp, "%d ", valueDistribution[u][value]);
-        }
-        fputs("\n", fp);
-    }
-    fclose(fp);
-}
-
-void FlushClassifier(int root)
-{
-    std::vector<int> depth(n, -1);
-    depth[root] = 0;
-    for (int u = 0; u < n; ++u)
-    {
-        NodeDepth(depth.data(), u);
-    }
-
-    std::vector<int> height(n, -1);
-    NodeHeight(height, root);
-
-    std::vector<int> count(n, -1);
-    NodeCount(count.data(), root);
-
-    for (int u = 0; u < n; ++u)
-    {
-        if (u == root) continue;
-        int highestVal = 2*n - 1;
-
-        int sum = 0;
-        for (int i = 1; i <= highestVal; i += 2)
-        {
-            sum += valueDistribution[u][i];
-        }
-
-        double loExpect = 0.f;
-        for (int i = 3; i <= highestVal; i += 2)
-        {
-            int steps = i/2;
-            loExpect += (double)valueDistribution[u][i]*steps / sum;
-        }
-
-        double hiExpect = 0.f;
-        for (int i = highestVal; i >= 3; i -= 2)
-        {
-            int steps = (highestVal-i)/2 + 1;
-            hiExpect += (double)valueDistribution[u][i]*steps / sum;
-        }
-
-        double rndExpect = (n-1) / 2.0;
-
-        int udepth = depth[u];
-        int uheight = height[u];
-        int ucount = count[u];
-        printf("%d,%d,%d,%d,%lf,%lf,%lf\n", n, ucount, udepth, uheight,
-                loExpect, hiExpect, rndExpect);
-    }
-}
-#endif

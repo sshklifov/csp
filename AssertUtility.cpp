@@ -5,10 +5,9 @@
 #include <cstdlib>
 #include <functional>
 
+// verify that node labeling is valid
 bool Solver::CheckSolution()
 {
-    assert(status == READY);
-
     std::vector<bool> used (USED_CAPACITY, 0);
     for (int i = 0; i < n; ++i)
     {
@@ -32,9 +31,9 @@ bool Solver::CheckSolution()
     return true;
 }
 
+// verify that input graph is a tree
 bool Solver::CheckIsTree()
 {
-    assert(status == LOADED);
     std::vector<bool> visited (n, false);
     std::function<void(int,int)> DfsVisit =
         [&](int u, int parent)
@@ -65,10 +64,10 @@ bool Solver::CheckIsTree()
     return true;
 }
 
+// performs limited tests on the backtracking state variables
+// code is messy and you can skip it
 bool Solver::BacktrackInvariant(int u)
 {
-    assert(status == READY);
-
     int vertices = 0;
     for (int i = root; i != u; i = nextVertex[i])
     {
@@ -142,6 +141,17 @@ bool Solver::BacktrackInvariant(int u)
             assert(!used[diff]);
             used[diff] = true;
         }
+    }
+
+    if (nextVertex[u] != -1)
+    {
+        int mmax = 2*n - 1;
+        while (usedValues[mmax]) mmax -= 2;
+        assert(mmax == nextMax);
+
+        int mmin = 3;
+        while (usedValues[mmin]) mmin += 2;
+        assert(mmin == nextMin);
     }
 
     return true;

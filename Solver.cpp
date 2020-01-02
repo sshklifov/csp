@@ -6,6 +6,9 @@
 #include <functional>
 #include <algorithm>
 
+Solver::Solver() : status(INVALID)
+{}
+
 Solver::Solver(int n)
 {
     Random(n);
@@ -38,10 +41,22 @@ void Solver::Reload(const char* path)
     assert(CheckIsTree());
 }
 
-bool Solver::Search()
+#ifdef MAX_SECONDS
+#include <csignal>
+#include <unistd.h>
+sig_atomic_t loop;
+static void SignalHandler(int)
+{
+    loop = false;
+}
+#endif
+
+void Solver::SearchWithAlarm()
 {
     assert(status == LOADED);
 
+    // consider every node as the root. consider nodes
+    // with the higher degrees first.
     std::vector<int> roots(n);
     for (int i = 0; i < n; ++i) roots[i] = i;
     std::sort(roots.begin(), roots.end(),
@@ -53,25 +68,68 @@ bool Solver::Search()
     for (int root : roots)
     {
         RootTree(root);
-        assert(status == READY);
+        assert(status == ORDERED);
+
+        // backtrack state variables
+        for (int& x : values) x = -1;
+        for (bool& x : usedValues) x = false;
+        for (bool& x : usedDiff) x = false;
+
         try
         {
-            /* nextMin = 3; */
-            /* nextMax = 2*n - 1; */
+            // stores the smallest available value for a node
+            // used to speed up backtracking
+            nextMin = 3;
+            // stores the biggest available value for a node.
+            // used to speed up backtracking
+            nextMax = 2*n - 1;
 
-            // TODO gore
             values[root] = 1;
             usedValues[1] = true;
+
+#ifdef MAX_SECONDS
+            alarm(MAX_SECONDS);
+            loop = true;
             BacktrackLoop(nextVertex[root]);
+            printf("Timed out!\n");
+            alarm(0);
+            return;
+#else
+            BacktrackLoop(nextVertex[root]);
+#endif
         }
-        catch(int)
+        catch(int) // if a solution is found, throw an int to unwind the stack
         {
-            return true;
+            for (int i = 0; i < n; ++i) // print solution
+            {
+                for (int j : graph[i])
+                {
+                    if (i > j) continue;
+                    printf("%d %d\n", values[i], values[j]);
+                }
+            }
+            status = INVALID;
+            return; // and finish
         }
-        status = LOADED;
+        status = LOADED; // try with another root
     }
     
-    return false;
+    // no start root contained a solution. then the problem has no solution
+    status = INVALID;
+    printf("Not possible!\n");
+}
+
+void Solver::Search()
+{
+#ifdef MAX_SECONDS
+    void(*oldHandler)(int) = signal(SIGALRM, SignalHandler);
+#endif
+
+    SearchWithAlarm();
+
+#ifdef MAX_SECONDS
+    signal(SIGALRM, oldHandler);
+#endif
 }
 
 void Solver::RootTree(int root)
@@ -102,14 +160,9 @@ void Solver::RootTree(int root)
     this->root = root;
     status = ROOTED;
 
+    // after rooting, choose node ordering
     Order();
     assert(status == ORDERED);
-
-    for (int& x : values) x = -1;
-    for (bool& x : usedValues) x = false;
-    for (bool& x : usedDiff) x = false;
-
-    status = READY;
 }
 
 void Solver::Order()
@@ -117,6 +170,8 @@ void Solver::Order()
     PredictPrio();
     assert(status == PREDICT);
 
+    // prioritize stable nodes for the toporder. in our case this is just
+    // generated a random toporder.
     std::function<bool(int,int)> comp =
         [this](int a, int b)
         {
@@ -148,6 +203,8 @@ void Solver::PredictPrio()
 {
     assert(status == ROOTED);
 
+    // Calculate depth for each node
+    // the depth is determined from the current root
     for (int i = 0; i < n; ++i) depth[i] = -1;
     depth[root] = 0;
     for (int u = 0; u < n; ++u)
@@ -155,9 +212,13 @@ void Solver::PredictPrio()
         NodeDepth(u);
     }
 
+    // Calculate height for each node
+    // the height is determined from the current root
     for (int i = 0; i < n; ++i) height[i] = -1;
     NodeHeight(root);
 
+    // Calculate number of nodes in the subtree rooted in i, for each i
+    // as the above, this is dependent on the current root
     for (int i = 0; i < n; ++i) nodeCount[i] = -1;
     NodeCount(root);
 
@@ -179,10 +240,12 @@ void Solver::PredictPrio()
     }
     avgHeight /= n;
 
-/* #if !defined(HAVE_PYTHON) || MAX_VERTICES < 50 */
-#if 0
-    for (int i = 0; i < n; ++i) stability[i] = 1.f;
+#ifndef HAVE_PYTHON
+    printf("using approximation\n");
+    for (int i = 0; i < n; ++i) stability[i] = (double)nodeCount[i] / n;
 #else
+    printf("using randomforest\n");
+    // generate the stability array with a random forest regressor
     FILE* fp = fopen("input.csv", "w");
     assert(fp);
     fputs("n,subtree_cnt,depth,avg_depth,max_depth,height,avg_height,max_height\n", fp);
@@ -215,49 +278,27 @@ void Solver::PredictPrio()
 
 void Solver::BacktrackLoop(int u)
 {
-    assert(BacktrackInvariant(u));
+#ifdef MAX_SECONDS
+    if (!loop) return;
+#endif
+
     if (u == -1)
     {
         assert(CheckSolution());
         throw 0;
     }
+    assert(BacktrackInvariant(u));
 
-    /* if (stability[u] < 0.1f) */
-    if (false && stability[u] < 0.1f)
+    if (depth[u] % 2)
     {
-        /* int lo = n + !(n%2); */
-        /* int hi = lo + 2; */
-        /* while (lo >= 3 && hi <= 2*n - 1) */
-        /* { */
-        /*     Backtrack(u, lo); */
-        /*     lo -= 2; */
-        /*     Backtrack(u, hi); */
-        /*     hi += 2; */
-        /* } */
-        /* while (lo >= 3) */
-        /* { */
-        /*     Backtrack(u, lo); */
-        /*     lo -= 2; */
-        /* } */
-        /* while (hi <= 2*n - 1) */
-        /* { */
-        /*     Backtrack(u, hi); */
-        /*     hi += 2; */
-        /* } */
-    }
-    else if (depth[u] % 2)
-    {
-        /* int oldMax = nextMax; */
-        /* for (int value = nextMax + 2; used[value];) */
-        /* Backtrack */
-        for (int value = 2*n - 1; value >= 3; value -= 2)
+        for (int value = nextMax; value >= nextMin; value -= 2)
         {
             Backtrack(u, value);
         }
     }
     else
     {
-        for (int value = 3; value <= 2*n - 1; value += 2)
+        for (int value = nextMin; value <= nextMax; value += 2)
         {
             Backtrack(u, value);
         }
@@ -274,7 +315,16 @@ void Solver::Backtrack(int u, int value)
     usedValues[value] = true;
     usedDiff[diff] = true;
 
+    // add a check nextVertex[u] != -1 otherwise infinite while loop (all values are assigned)
+    int oldMax = nextMax;
+    if (nextVertex[u] != -1) while (usedValues[nextMax]) nextMax -= 2;
+    int oldMin = nextMin;
+    if (nextVertex[u] != -1) while (usedValues[nextMin]) nextMin += 2;
+
     BacktrackLoop(nextVertex[u]);
+
+    nextMax = oldMax;
+    nextMin = oldMin;
 
     values[u] = -1;
     usedValues[value] = false;
