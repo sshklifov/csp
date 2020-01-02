@@ -75,24 +75,25 @@ void Solver::SearchWithAlarm()
         for (bool& x : usedValues) x = false;
         for (bool& x : usedDiff) x = false;
 
+        // stores the smallest available value for a node
+        // used to speed up backtracking
+        nextMin = 3;
+        // stores the biggest available value for a node.
+        // used to speed up backtracking
+        nextMax = 2*n - 1;
+
+        values[root] = 1;
+        usedValues[1] = true;
+
         try
         {
-            // stores the smallest available value for a node
-            // used to speed up backtracking
-            nextMin = 3;
-            // stores the biggest available value for a node.
-            // used to speed up backtracking
-            nextMax = 2*n - 1;
-
-            values[root] = 1;
-            usedValues[1] = true;
-
 #ifdef MAX_SECONDS
             alarm(MAX_SECONDS);
             loop = true;
             BacktrackLoop(nextVertex[root]);
             printf("Timed out!\n");
             alarm(0);
+            status = INVALID;
             return;
 #else
             BacktrackLoop(nextVertex[root]);
@@ -294,6 +295,7 @@ void Solver::BacktrackLoop(int u)
         for (int value = nextMax; value >= nextMin; value -= 2)
         {
             Backtrack(u, value);
+            assert(BacktrackInvariant(u));
         }
     }
     else
@@ -301,6 +303,7 @@ void Solver::BacktrackLoop(int u)
         for (int value = nextMin; value <= nextMax; value += 2)
         {
             Backtrack(u, value);
+            assert(BacktrackInvariant(u));
         }
     }
 }
