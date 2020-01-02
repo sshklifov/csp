@@ -87,19 +87,17 @@ void Solver::SearchWithAlarm()
 
         try
         {
+            BacktrackLoop(nextVertex[root]);
 #ifdef MAX_SECONDS
-            alarm(MAX_SECONDS);
-            loop = true;
-            BacktrackLoop(nextVertex[root]);
-            printf("Timed out!\n");
-            alarm(0);
-            status = INVALID;
-            return;
-#else
-            BacktrackLoop(nextVertex[root]);
+            if (!loop) // loop==false iff MAX_SECONDS have passed
+            {
+                printf("Timed out!\n");
+                status = INVALID;
+                return;
+            }
 #endif
         }
-        catch(int) // if a solution is found, throw an int to unwind the stack
+        catch (int) // if a solution is found, throw an int to unwind the stack
         {
             for (int i = 0; i < n; ++i) // print solution
             {
@@ -124,11 +122,14 @@ void Solver::Search()
 {
 #ifdef MAX_SECONDS
     void(*oldHandler)(int) = signal(SIGALRM, SignalHandler);
+    loop = true;
+    alarm(MAX_SECONDS);
 #endif
 
     SearchWithAlarm();
 
 #ifdef MAX_SECONDS
+    alarm(0);
     signal(SIGALRM, oldHandler);
 #endif
 }
@@ -332,6 +333,4 @@ void Solver::Backtrack(int u, int value)
     values[u] = -1;
     usedValues[value] = false;
     usedDiff[diff] = false;
-
-    assert(BacktrackInvariant(u));
 }

@@ -114,5 +114,9 @@ for (int val = nextMin; val <= nextMax; val += 2)
 
 ## Компилация
 ```
+g++ *.cpp -DNDEBUG -DHAVE_PYTHON -O2
+```
+Ако се пуска върху posix compilant машина:
+```
 g++ *.cpp -DNDEBUG -DHAVE_PYTHON -DMAX_SECONDS=5 -O2
 ```
