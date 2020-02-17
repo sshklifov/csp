@@ -1,0 +1,66 @@
+[
+    {
+        "arguments": [
+            "g++",
+            "-c",
+            "-DHAVE_PYTHON",
+            "-DMAX_SECONDS=5",
+            "-DNDEBUG",
+            "-O2",
+            "-I/usr/include/python3.8",
+            "-o",
+            "csp",
+            "AssertUtility.cpp"
+        ],
+        "directory": "/home/stef/Downloads/csp",
+        "file": "AssertUtility.cpp"
+    },
+    {
+        "arguments": [
+            "g++",
+            "-c",
+            "-DHAVE_PYTHON",
+            "-DMAX_SECONDS=5",
+            "-DNDEBUG",
+            "-O2",
+            "-I/usr/include/python3.8",
+            "-o",
+            "csp",
+            "Main.cpp"
+        ],
+        "directory": "/home/stef/Downloads/csp",
+        "file": "Main.cpp"
+    },
+    {
+        "arguments": [
+            "g++",
+            "-c",
+            "-DHAVE_PYTHON",
+            "-DMAX_SECONDS=5",
+            "-DNDEBUG",
+            "-O2",
+            "-I/usr/include/python3.8",
+            "-o",
+            "csp",
+            "Solver.cpp"
+        ],
+        "directory": "/home/stef/Downloads/csp",
+        "file": "Solver.cpp"
+    },
+    {
+        "arguments": [
+            "g++",
+            "-c",
+            "-DHAVE_PYTHON",
+            "-DMAX_SECONDS=5",
+            "-DNDEBUG",
+            "-O2",
+            "-I/usr/include/python3.8",
+            "-o",
+            "csp",
+            "Analise.cpp"
+        ],
+        "directory": "/home/stef/Downloads/csp",
+        "file": "Analise.cpp"
+    }
+]

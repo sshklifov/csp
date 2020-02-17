@@ -11,7 +11,7 @@ const int MAX_VERTICES = 100;
 // the biggest and smallest element.
 // Example use cases: determine if the difference between two nodes is unique
 // in O(1) time
-const int USED_CAPACITY = 2*MAX_VERTICES;
+const int USED_CAPACITY = 2 * MAX_VERTICES;
 const int SEED = 6111;
 
 // Class which does the heavy lifting. It can be initialized with
@@ -79,7 +79,14 @@ public:
     int nextMin, nextMax;
 
     // variable controlling flow
-    enum {INVALID, LOADED, ROOTED, PREDICT, ORDERED} status;
+    enum
+    {
+        INVALID,
+        LOADED,
+        ROOTED,
+        PREDICT,
+        ORDERED
+    } status;
 };
 
 #endif

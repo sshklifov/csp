@@ -6,7 +6,8 @@
 // helper function to calculate depth for each node
 void Solver::NodeDepth(int u)
 {
-    if (depth[u] != -1) return;
+    if (depth[u] != -1)
+        return;
     NodeDepth(pred[u]);
     depth[u] = depth[pred[u]] + 1;
 }
@@ -28,7 +29,8 @@ void Solver::NodeHeight(int u)
 // helper function to calculate number of nodes rooted at u for each node
 void Solver::NodeCount(int u)
 {
-    if (nodeCount[u] != -1) return;
+    if (nodeCount[u] != -1)
+        return;
 
     nodeCount[u] = 1;
     for (int v : graph[u])
@@ -44,7 +46,8 @@ void Solver::NodeCount(int u)
 // for disjoin set data structure (similar to kruskal)
 static int PathCompression(std::vector<int>& p, int i)
 {
-    if (p[i] == -1) return i;
+    if (p[i] == -1)
+        return i;
     return p[i] = PathCompression(p, p[i]);
 }
 
@@ -58,15 +61,16 @@ void Solver::Random(int n)
 {
     assert(n <= MAX_VERTICES && n > 9);
     this->n = n;
-    for (int i = 0; i < n; ++i) graph[i].clear();
+    for (int i = 0; i < n; ++i)
+        graph[i].clear();
 
-    static std::default_random_engine eng (SEED);
-    std::uniform_int_distribution<int> distr(0, n-1);
+    static std::default_random_engine eng(SEED);
+    std::uniform_int_distribution<int> distr(0, n - 1);
 
     std::vector<int> p(n, -1);
     std::vector<int> rank(n, 1);
 
-    int edges = n-1;
+    int edges = n - 1;
     int v1 = distr(eng);
     while (edges > 0)
     {
@@ -109,7 +113,8 @@ void Solver::Print()
     {
         for (int v : graph[u])
         {
-            if (u > v) continue;
+            if (u > v)
+                continue;
             printf("%d %d\n", u, v);
         }
     }
