@@ -18,8 +18,7 @@ const int SEED = 6111;
 // - a uniform random tree
 // - by reading it from a file
 // Then you can call Search which uses a backtracking algorithm
-class Solver
-{
+class Solver {
 public:
     Solver();
     explicit Solver(int n);
@@ -79,14 +78,7 @@ public:
     int nextMin, nextMax;
 
     // variable controlling flow
-    enum
-    {
-        INVALID,
-        LOADED,
-        ROOTED,
-        PREDICT,
-        ORDERED
-    } status;
+    enum { INVALID, LOADED, ROOTED, PREDICT, ORDERED } status;
 };
 
 #endif

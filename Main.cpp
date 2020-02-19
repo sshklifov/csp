@@ -9,8 +9,7 @@ int main(int argc, char* argv[])
 {
 #ifdef HAVE_PYTHON
     wchar_t* program = Py_DecodeLocale(argv[0], NULL);
-    if (program == NULL)
-    {
+    if (program == NULL) {
         fprintf(stderr, "Fatal error: cannot decode argv[0]\n");
         exit(1);
     }
@@ -19,16 +18,14 @@ int main(int argc, char* argv[])
 #endif
 
     int loop = 100;
-    do
-    {
+    do {
         int n = 50;
         Solver solver(n);
         solver.Search();
     } while (loop-- > 0);
 
 #ifdef HAVE_PYTHON
-    if (Py_FinalizeEx() < 0)
-    {
+    if (Py_FinalizeEx() < 0) {
         exit(120);
     }
     PyMem_RawFree(program);
