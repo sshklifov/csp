@@ -3,7 +3,8 @@
 #include <cassert>
 #include <random>
 
-// helper function to calculate depth for each node
+// See Solver.cpp
+
 void Solver::NodeDepth(int u)
 {
     if (depth[u] != -1) return;
@@ -11,7 +12,6 @@ void Solver::NodeDepth(int u)
     depth[u] = depth[pred[u]] + 1;
 }
 
-// helper function to calculate height for each node
 void Solver::NodeHeight(int u)
 {
     height[u] = 0;
@@ -23,7 +23,6 @@ void Solver::NodeHeight(int u)
     }
 }
 
-// helper function to calculate number of nodes rooted at u for each node
 void Solver::NodeCount(int u)
 {
     if (nodeCount[u] != -1) return;
@@ -37,22 +36,19 @@ void Solver::NodeCount(int u)
     }
 }
 
-// for disjoin set data structure (similar to kruskal)
+// For disjoin set data structure (similar to kruskal). Used to generate a
+// random tree.
 static int PathCompression(std::vector<int>& p, int i)
 {
     if (p[i] == -1) return i;
     return p[i] = PathCompression(p, p[i]);
 }
 
-// generate uniform random tree (with a random walk)
-// Започваме с random root. Всеки път избираме нов random node.
-// Искаме да сложим edge между него и последния node. Ако образуваме
-// цикъл, не правим нищо и random node-a става последен random node.
-// Ако не образува цикъл, добавяме edge-a и random node-a става последения
-// random node.
+// Generate a uniform random tree with n vertices. The algorithm is due to
+// Andrei Broder.
 void Solver::Random(int n)
 {
-    assert(n <= MAX_VERTICES && n > 9);
+    assert(n <= MAX_VERTICES);
     this->n = n;
     for (int i = 0; i < n; ++i) graph[i].clear();
 

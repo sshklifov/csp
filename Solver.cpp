@@ -1,3 +1,4 @@
+// Used to execute getcertainty.py
 #ifdef HAVE_PYTHON
     #define PY_SSIZE_T_CLEAN
     #include <Python.h>
@@ -11,11 +12,20 @@
 #include <functional>
 #include <algorithm>
 
-Solver::Solver() : status(INVALID) {}
+Solver::Solver() : status(INVALID)
+{
+}
 
-Solver::Solver(int n) { Random(n); }
+Solver::Solver(int n)
+{
+    // generates a uniform random tree, see SolverUtil.cpp
+    Random(n);
+}
 
-Solver::Solver(const char* path) { Reload(path); }
+Solver::Solver(const char* path)
+{
+    Reload(path);
+}
 
 void Solver::Reload(const char* path)
 {
@@ -23,7 +33,7 @@ void Solver::Reload(const char* path)
     assert(fp);
 
     fscanf(fp, "%d", &n);
-    assert(n <= MAX_VERTICES && n > 9);
+    assert(n <= MAX_VERTICES);
 
     for (int i = 0; i < MAX_VERTICES; ++i) graph[i].clear();
 
@@ -38,19 +48,22 @@ void Solver::Reload(const char* path)
     assert(CheckIsTree());
 }
 
+// Create a sinnal handler for SIGALRM
 #ifdef MAX_SECONDS
     #include <csignal>
     #include <unistd.h>
 sig_atomic_t loop;
-static void SignalHandler(int) { loop = false; }
+static void SignalHandler(int)
+{
+    loop = false;
+}
 #endif
 
 void Solver::SearchWithAlarm()
 {
     assert(status == LOADED);
 
-    // consider every node as the root. consider nodes
-    // with the higher degrees first.
+    // Consider every node as the root. Prioritize nodes with higher degrees
     std::vector<int> roots(n);
     for (int i = 0; i < n; ++i) roots[i] = i;
     std::sort(roots.begin(), roots.end(), [this](int a, int b) {
@@ -59,18 +72,17 @@ void Solver::SearchWithAlarm()
 
     for (int root : roots) {
         RootTree(root);
+        assert(status == ROOTED);
+        Order();
         assert(status == ORDERED);
 
-        // backtrack state variables
+        // Clear backtrack state variables
         for (int& x : values) x = -1;
         for (bool& x : usedValues) x = false;
         for (bool& x : usedDiff) x = false;
 
-        // stores the smallest available value for a node
-        // used to speed up backtracking
+        // Stores the next smallest/biggest available value, see BacktrackLoop
         nextMin = 3;
-        // stores the biggest available value for a node.
-        // used to speed up backtracking
         nextMax = 2 * n - 1;
 
         values[root] = 1;
@@ -89,20 +101,14 @@ void Solver::SearchWithAlarm()
         }
         catch (int) // if a solution is found, throw an int to unwind the stack
         {
-            for (int i = 0; i < n; ++i) // print solution
-            {
-                for (int j : graph[i]) {
-                    if (i > j) continue;
-                    printf("%d %d\n", values[i], values[j]);
-                }
-            }
+            Print();
             status = INVALID;
-            return; // and finish
+            return;
         }
         status = LOADED; // try with another root
     }
 
-    // no start root contained a solution. then the problem has no solution
+    // No start root contained a solution. Then the problem has no solution
     status = INVALID;
     printf("Not possible!\n");
 }
@@ -147,10 +153,6 @@ void Solver::RootTree(int root)
 
     this->root = root;
     status = ROOTED;
-
-    // after rooting, choose node ordering
-    Order();
-    assert(status == ORDERED);
 }
 
 void Solver::Order()
@@ -158,10 +160,9 @@ void Solver::Order()
     PredictPrio();
     assert(status == PREDICT);
 
-    // prioritize stable nodes for the toporder. in our case this is just
-    // generated a random toporder.
+    // Prioritize certain nodes for the toporder
     std::function<bool(int, int)> comp = [this](int a, int b) {
-        return stability[a] < stability[b];
+        return certainty[a] < certainty[b];
     };
     std::priority_queue<int, std::vector<int>, decltype(comp)> frontier(comp);
     frontier.push(root);
@@ -189,45 +190,44 @@ void Solver::Order()
 void Solver::PredictPrio()
 {
     assert(status == ROOTED);
+    // Generate features for ml
 
     // Calculate depth for each node
-    // the depth is determined from the current root
     for (int i = 0; i < n; ++i) depth[i] = -1;
     depth[root] = 0;
     for (int u = 0; u < n; ++u) NodeDepth(u);
 
     // Calculate height for each node
-    // the height is determined from the current root
     for (int i = 0; i < n; ++i) height[i] = -1;
     NodeHeight(root);
 
     // Calculate number of nodes in the subtree rooted in i, for each i
-    // as the above, this is dependent on the current root
     for (int i = 0; i < n; ++i) nodeCount[i] = -1;
     NodeCount(root);
 
     float avgDepth = 0;
     int maxDepth = depth[0];
     for (int i = 0; i < n; ++i) {
-        avgDepth += depth[i];
+        avgDepth += depth[i] / n;
         maxDepth = std::max(maxDepth, depth[i]);
     }
-    avgDepth /= n;
 
     float avgHeight = 0;
     int maxHeight = height[0];
     for (int i = 0; i < n; ++i) {
-        avgHeight += height[i];
+        avgHeight += height[i] / n;
         maxHeight = std::max(maxHeight, height[i]);
     }
-    avgHeight /= n;
 
 #ifndef HAVE_PYTHON
     printf("using approximation\n");
-    for (int i = 0; i < n; ++i) stability[i] = (double)nodeCount[i] / n;
+    for (int i = 0; i < n; ++i) certainty[i] = (double)nodeCount[i] / n;
 #else
     printf("using randomforest\n");
-    // generate the stability array with a random forest regressor
+    // Generate the certainty array with a random forest regressor
+    //
+    // Dump features to input.csv, call getcertainty.py, read the result from
+    // output.csv. An improvement would be to use pipes instead of files for IPC
     FILE* fp = fopen("input.csv", "w");
     assert(fp);
     fputs("n,subtree_cnt,depth,avg_depth,max_depth,height,avg_height,max_"
@@ -242,9 +242,9 @@ void Solver::PredictPrio()
     assert(!ferror(fp));
     fclose(fp);
 
-    fp = fopen("getstability.py", "r");
+    fp = fopen("getcertainty.py", "r");
     assert(fp);
-    int s = PyRun_SimpleFile(fp, "getstability.py");
+    int s = PyRun_SimpleFile(fp, "getcertainty.py");
     assert(s == 0);
     fclose(fp);
 
@@ -252,10 +252,10 @@ void Solver::PredictPrio()
     assert(fp);
     for (int i = 0; i < n; ++i) {
         if (i == root) {
-            stability[i] = 1.f;
+            certainty[i] = 1.f;
         }
         else {
-            fscanf(fp, "%f", &stability[i]);
+            fscanf(fp, "%f", &certainty[i]);
         }
     }
     assert(!ferror(fp));
@@ -301,8 +301,8 @@ void Solver::Backtrack(int u, int value)
     usedValues[value] = true;
     usedDiff[diff] = true;
 
-    // add a check nextVertex[u] != -1 otherwise infinite while loop (all values
-    // are assigned)
+    // Update nextMin and nextMax. If u is the last vertex, there are no more
+    // values, so skip instead.
     int oldMax = nextMax;
     if (nextVertex[u] != -1)
         while (usedValues[nextMax]) nextMax -= 2;

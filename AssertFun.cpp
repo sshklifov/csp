@@ -5,7 +5,10 @@
 #include <cstdlib>
 #include <functional>
 
-// verify that node labeling is valid
+// Defines some checks during executation. They do not guarantee correct
+// operation. Please compile with -DNDEBUG, because they slow down the
+// program significantly. Nothing to see here.
+
 bool Solver::CheckSolution()
 {
     std::vector<bool> used(USED_CAPACITY, 0);
@@ -28,7 +31,6 @@ bool Solver::CheckSolution()
     return true;
 }
 
-// verify that input graph is a tree
 bool Solver::CheckIsTree()
 {
     std::vector<bool> visited(n, false);
@@ -56,8 +58,6 @@ bool Solver::CheckIsTree()
     return true;
 }
 
-// performs limited tests on the backtracking state variables
-// code is messy and you can skip it
 bool Solver::BacktrackInvariant(int u)
 {
     int vertices = 0;
